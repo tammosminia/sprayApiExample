@@ -4,7 +4,6 @@ import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol
 import spray.routing._
 
-
 object RobotProtocol extends DefaultJsonProtocol {
   //Our domain class
   case class Robot(name: String)
