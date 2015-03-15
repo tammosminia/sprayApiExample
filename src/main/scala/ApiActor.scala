@@ -20,13 +20,12 @@ class ApiActor extends Actor with HttpService with ActorLogging {
   //A list of our domain objects
   var robots = List(Robot("R2D2"), Robot("Asimo"))
 
-  // the HttpService trait defines only one abstract member, which
-  // connects the services environment to the enclosing actor or test
+  //The HttpService trait defines only one abstract member, which
+  //connects the services environment to the enclosing actor or test
   def actorRefFactory = context
 
-  // this actor only runs our route, but you could add
-  // other things here, like request stream processing
-  // or timeout handling
+  //This actor only runs our route, but you could add
+  //other things here, like request stream processing or timeout handling
   def receive = runRoute(apiRoute)
 
   //Notice that both path methods return a Route. We need to chain them together with ~
