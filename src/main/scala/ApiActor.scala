@@ -6,18 +6,20 @@ import spray.routing._
 
 object RobotProtocol extends DefaultJsonProtocol {
   //Our domain class
-  case class Robot(name: String)
+  case class Robot(name: String, color: Option[String], amountOfArms: Int) {
+    require(amountOfArms >= 0, "Robots cannot have a negative amount of arms!")
+  }
 
   //We use the default json marshalling for Robot.
   //There are multiple jsonFormat methods in DefaultJsonProtocol. Depending on how many parameters the model class has.
   //Robot has just one, so we use jsonFormat1
-  implicit val RobotFormat = jsonFormat1(Robot)
+  implicit val RobotFormat = jsonFormat3(Robot)
 }
 import RobotProtocol._
 
 class ApiActor extends Actor with HttpService with ActorLogging {
   //A list of our domain objects
-  var robots = List(Robot("R2D2"), Robot("Asimo"))
+  var robots = List(Robot("R2D2", Some("white"), 0), Robot("Asimo", None, 2))
 
   //The HttpService trait defines only one abstract member, which
   //connects the services environment to the enclosing actor or test
