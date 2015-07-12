@@ -1,0 +1,37 @@
+apply plugin: 'scala'
+
+version = '1.0'
+
+repositories {
+    mavenCentral()
+}
+
+
+dependencies {
+    compile group: 'org.scala-lang', name: 'scala-library', version: '2.11.6'
+    compile group: 'com.typesafe.akka', name: 'akka-actor_2.11', version: '2.3.9'
+    compile group: 'com.typesafe.akka', name: 'akka-remote_2.11', version: '2.3.9'
+    testCompile group: 'org.scalatest', name: 'scalatest_2.11', version: '2.2.4'
+    compile 'io.spray:spray-can_2.11:1.3.3'
+    compile 'io.spray:spray-routing_2.11:1.3.3'
+    compile 'io.spray:spray-json_2.11:1.3.1'
+    compile 'io.spray:spray-client_2.11:1.3.1'
+}
+
+////run the akka application
+//task run(type: JavaExec, dependsOn: classes) {
+//    //object to run. (The one that extends App)
+//    main = 'pi.Pi'
+//    classpath sourceSets.main.runtimeClasspath
+//    classpath configurations.runtime
+//}
+//
+////run scala tests. These are not automatically picked up by gradle,
+////so we run them like this.
+//task spec(dependsOn: ['testClasses'], type: JavaExec) {
+//    main = 'org.scalatest.tools.Runner'
+//    args = ['-R', 'build/classes/test', '-o']
+//    classpath = sourceSets.test.runtimeClasspath
+//}
+
+
