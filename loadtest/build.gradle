@@ -1,0 +1,25 @@
+apply plugin: 'scala'
+
+version = '1.0'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+	ext.gatlingVersion = '2.1.7'
+    compile group: 'io.gatling', name: 'gatling-app', version: gatlingVersion
+    compile group: 'io.gatling', name: 'gatling-recorder', version: gatlingVersion
+    compile group: 'io.gatling.highcharts', name: 'gatling-charts-highcharts', version: gatlingVersion
+}
+
+task gatling(dependsOn: 'compileTestScala') << {
+    javaexec {
+        main = 'io.gatling.app.Gatling'
+        classpath = sourceSets.test.output + sourceSets.test.runtimeClasspath
+            args    '-sf', sourceSets.test.output,            //source folder
+                    '-bf', sourceSets.test.output.classesDir, //target folder where gatling will compile the simulation
+                    '-s', 'RobotsLoadTest',                   //The simulation to run
+                    '-rf', 'build/reports/gatling'            //place to put the report
+    }
+}

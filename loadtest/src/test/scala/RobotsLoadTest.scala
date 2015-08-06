@@ -3,8 +3,7 @@ import io.gatling.http.Predef._
 import scala.concurrent.duration._
 
 class RobotsLoadTest extends Simulation {
-
-	lazy val baseUrl = "http://localhost:8081"
+	val baseUrl = "http://localhost:8080"
 
 	val httpProtocol = http
 		.baseURL(baseUrl)
@@ -16,10 +15,11 @@ class RobotsLoadTest extends Simulation {
 	val s = scenario("Simulation")
 		.exec(http("request_0")
 		.post("/robots")
-		.body(RawFileBody("request.json"))
+		.body(StringBody("""{
+						|  "name": "C3PO",
+						|  "amountOfArms": 2
+						|}""".stripMargin))
 		)
 
-	setUp(s.inject(constantUsersPerSec(100) during(2 minutes))
-	).protocols(httpProtocol)
-
+	setUp(s.inject(constantUsersPerSec(1000) during(10 seconds))).protocols(httpProtocol)
 }
