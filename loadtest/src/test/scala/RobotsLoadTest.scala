@@ -3,7 +3,7 @@ import io.gatling.http.Predef._
 import scala.concurrent.duration._
 
 class RobotsLoadTest extends Simulation {
-	val baseUrl = "http://localhost:8080"
+	val baseUrl = "http://localhost:8080"  //We need to have our API running here
 
 	val httpProtocol = http
 		.baseURL(baseUrl)
