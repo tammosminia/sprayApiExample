@@ -3,6 +3,7 @@ import spray.http.MediaTypes
 import spray.httpx.SprayJsonSupport._
 import spray.json.DefaultJsonProtocol
 import spray.routing._
+import ThrottlerDirectives._
 
 object RobotProtocol extends DefaultJsonProtocol {
   //Our domain class
@@ -32,21 +33,23 @@ class ApiActor extends Actor with HttpService with ActorLogging {
   //Notice that both path methods return a Route. We need to chain them together with ~
   val apiRoute: Route =
     path("robots") {
-      get { //with get we will return our current list of robots
-        log.info("Building get route")
-        complete {
-          log.info("Executing get route")
-          //complete will return the result in an appropriate format
-          //With SprayJsonSupport it knows how to marshall a List to json
-          //With RobotFormat it knows how to marshall Robot
-          robots
-        }
-      } ~ post { //With post we will add a robot
-        log.info("Building post route")
-        handleWith { robot: Robot =>  //handleWith will unmarshall the input
-          log.info("Executing post route")
-          robots = robot :: robots
-          robot //handleWith will also marshall the result. Here we simply return the new robot.
+      throttle(1) {
+        get { //with get we will return our current list of robots
+          log.info("Building get route")
+          complete {
+            log.info("Executing get route")
+            //complete will return the result in an appropriate format
+            //With SprayJsonSupport it knows how to marshall a List to json
+            //With RobotFormat it knows how to marshall Robot
+            robots
+          }
+        } ~ post { //With post we will add a robot
+          log.info("Building post route")
+          handleWith { robot: Robot =>  //handleWith will unmarshall the input
+            log.info("Executing post route")
+            robots = robot :: robots
+            robot //handleWith will also marshall the result. Here we simply return the new robot.
+          }
         }
       }
     } ~ path("") { //When we go to localhost:8080/ just show a link to localhost:8080/robots

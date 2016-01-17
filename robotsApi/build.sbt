@@ -12,7 +12,8 @@ libraryDependencies ++= {
     "io.spray"            %%  "spray-servlet" % sprayV,
     "io.spray"            %%  "spray-routing" % sprayV,
     "io.spray"            %%  "spray-json"    % "1.3.1", //has not been updated yet
-    "com.typesafe.akka"   %%  "akka-actor"    % akkaV
+    "com.typesafe.akka"   %%  "akka-actor"    % akkaV,
+    "joda-time" % "joda-time" % "2.9.1"
   )
 }
 
