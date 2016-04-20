@@ -1,0 +1,67 @@
+= Een REST API maken met Akka HTTP
+
+== Akka
+
+Akka is een framework waarin je Actors maakt die met elkaar communiceren door middel van Messages.
+Deze Messages komen eerst in een Mailbox terecht. Ze zullen een voor een door de actor opgepakt worden.
+Hierdoor kan je binnen een actor makkelijk state bijhouden en bewerken. Deze state kan namelijk niet door andere actors of threads bewerkt worden.
+Het is mogelijk om Akka in Scala of in Java te gebruiken. In dit voorbeeld zullen we Scala gebruiken. 
+
+
+== Akka HTTP
+
+Dit artikel richt zich op Akka HTTP, wat slechts een klein gedeelte van Akka is.
+Vroeger heette dit Spray en deze naam zal ook nog in wat dependencies en packages terug komen.
+
+Je zal zien hoe je hiermee een REST API kan schrijven.
+
+
+== Build en dependencies
+
+Het lijkt voor de hand te liggen om SBT (Scala Build Tool) te gebruiken. Dit is echter helemaal niet noodzakelijk. Je kan ook gewoon Gradle gebruiken. Of zelfs maven.
+Let op de _2.11 in de dependencies. Met SBT is het niet nodig om die voluit te schrijven, dan wordt het erachter geplakt door %% te gebruiken ipv %. Zoals in "com.typesafe.akka" %% "akka-http-core" % "2.4.4".
+
+
+== De Robots API
+
+We maken een API waarin we robots kunnen verzamelen. Met eenvoudige CRUD (Create, Read, Update, Delete) acties die we met de correcte HTTP requests kunnen uitvoeren. 
+
+Je maakt een robot met een POST naar http://localhost:8080/robots
+
+[source]
+----
+{
+  "name": "Optimus Prime"
+}
+----
+
+
+Je kan alle robots opvragen met een GET naar http://localhost:8080/robots
+
+[source]
+----
+[{
+  "name": "R2D2"
+}, {
+  "name": "Asimo"
+}]
+----
+
+Een update doe je met PUT naar http://localhost:8080/robots/R2D2
+
+Verwijderen doe je bijvoorbeeld met DELETE naar http://localhost:8080/robots/R2D2
+
+We gebruiken hier de naam om een robot te identificeren. Het kan handig zijn om hiervoor een uniek nummer te genereren.
+
+
+== Routes en Directives
+
+Het hart van Akka HTTP is de Route. Die bouw je op met Directives die je in elkaar kan nesten of juist naast elkaar zetten met ~. Op die manier bouw je een boom waar je met je request uiteindelijk in een tak terecht komt.
+In het voorbeeld zie je dat we eerst splitsen op het URL pad. Bij een leeg pad (http://localhost:8080/) geven we documentatie. En onder "robots" splitsen we aan de hand van de HTTP methode zodat je de correcte handeling kan doen. 
+Er zijn directives voor allerlei verschillende dingen. Bijvoorbeeld:
+- Controle van de HTTP methode: get, post
+- Extractie van parameters: parameters
+- Extractie van headers: headerValueByName
+- Authenticatie: authenticateBasic
+- Marshalling: entity, handleWith
+
