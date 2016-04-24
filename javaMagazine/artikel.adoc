@@ -56,12 +56,140 @@ We gebruiken hier de naam om een robot te identificeren. Het kan handig zijn om 
 
 == Routes en Directives
 
-Het hart van Akka HTTP is de Route. Die bouw je op met Directives die je in elkaar kan nesten of juist naast elkaar zetten met ~. Op die manier bouw je een boom waar je met je request uiteindelijk in een tak terecht komt.
-In het voorbeeld zie je dat we eerst splitsen op het URL pad. Bij een leeg pad (http://localhost:8080/) geven we documentatie. En onder "robots" splitsen we aan de hand van de HTTP methode zodat je de correcte handeling kan doen. 
+Het hart van Akka HTTP is de Route. Die bouw je op met Directives die je in elkaar kan nesten of juist naast elkaar zetten met *~*. Op die manier bouw je een boom waar je met je request uiteindelijk in een tak terecht komt.
+
 Er zijn directives voor allerlei verschillende dingen. Bijvoorbeeld:
+
 - Controle van de HTTP methode: get, post
 - Extractie van parameters: parameters
 - Extractie van headers: headerValueByName
 - Authenticatie: authenticateBasic
-- Marshalling: entity, handleWith
+- Marshalling: complete, entity, handleWith
+
+In het voorbeeld zie je dat we eerst splitsen op het URL pad. Bij een leeg pad (http://localhost:8080/) geven we documentatie.
+En onder "robots" splitsen we aan de hand van de HTTP methode zodat je de correcte handeling kan doen.
+Met *complete* geven we het antwoord terug. Nu nog in de vorm van eenvoudige tekst.
+
+Je route ziet er dan als volgt uit:
+[source]
+----
+  val route: Route =
+    path("robots") {
+      get {
+        complete("Lijst met alle robots")
+      } ~ post {
+        complete("Voeg een robot toe")
+      }
+    } ~ path("") {
+      complete("Robots API documentatie")
+    }
+----
+
+Dit kan je testen met curl:
+[source]
+----
+$ curl http://localhost:8080
+Robots API documentatie
+$ curl -X POST http://localhost:8080/robots
+Voeg een robot toe
+----
+
+== Marshalling
+
+Nu gaan we een domein object aanmaken dat naar JSON gemarshalled wordt.
+
+[source]
+----
+case class Robot(naam: String, kleur: Option[String], aantalArmen: Int) {
+  require(aantalArmen >= 0, "Robots kunnen geen negatief aantal armen hebben!")
+}
+----
+
+In onze API houden we de lijst met bekende robots bij. Die starten we voor het gemak alvast met twee robots:
+
+[source]
+----
+var robots = List(Robot("R2D2", Some("wit"), 0), Robot("Asimo", None, 2))
+----
+
+Akka weet al hoe de standaard klassen (zoals String, List, Int) gemarshalled moeten worden. Voor onze domein klasse moet je een impliciete variabele toevoegen.
+De 3 staat hier voor het aantal instance variabelen die Robot heeft (naam, kleur en aantalArmen).
+
+[source]
+----
+implicit val RobotFormat = jsonFormat3(Robot)
+----
+
+Nu kan Akka zowel JSON van robots als robots van JSON. Met *complete* kunnen we nu gewoon de lijst met robots teruggeven.
+Voor de POST gebruiken we *handleWith*. Dit vertaalt de input naar ons domein object en het vertaalt ook het uiteindelijke resultaat weer naar JSON.
+We geven hier de nieuwe robot weer terug.
+
+[source]
+----
+ val route: Route =
+    path("robots") {
+      get {
+        complete(robots)
+      } ~ post {
+        handleWith { robot: Robot =>
+          robots = robot :: robots
+          robot
+        }
+      }
+    } ~ path("") {
+      complete("Robots API documentatie")
+    }
+----
+
+We gaan dit weer testen met curl.
+
+[source]
+----
+$ curl http://localhost:8080/robots
+[{
+  "name": "R2D2",
+  "color": "white",
+  "amountOfArms": 0
+}, {
+  "name": "Asimo",
+  "amountOfArms": 2
+}]
+
+$ curl -H "Content-Type: application/json" -X POST -d '{"naam": "C3PO", "kleur": "goud", "aantalArmen": 2}' http://localhost:8080/robots
+{
+  "naam": "C3PO",
+  "kleur": "goud",
+  "aantalArmen": 2
+}
+----
+
+== Validatie
+
+Als je ongeldige input geeft, dan krijg je ook netjes foutmeldingen terug.
+
+[source]
+----
+$ curl -H "Content-Type: application/json" -X POST -d '{"naam": "C3PO", "kleur": "goud", "aantalArmen": "veel"}' http://localhost:8080/robots
+The request content was malformed:
+Expected Int as JsNumber, but got "veel"
+----
+
+Kleur is een optioneel veld, dus die hoef je niet mee te geven. De andere velden zijn wel verplicht.
+
+[source]
+----
+$ curl -H "Content-Type: application/json" -X POST -d '{"kleur": "groen"}' http://localhost:8080/robots
+The request content was malformed:
+Object is missing required member 'naam'
+----
+
+In de Robots klasse hebben we ook een requirement toegevoegd. Ook die wordt netjes gecontrolleerd en doorgegeven.
+
+[source]
+----
+$ curl -H "Content-Type: application/json" -X POST -d '{"naam": "C3PO", "kleur": "goud", "aantalArmen": -1}' http://localhost:8080/robots
+requirement failed: Robots kunnen geen negatief aantal armen hebben!
+----
+
+
 

@@ -11,8 +11,8 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 //Our domain class
-case class Robot(name: String, color: Option[String], amountOfArms: Int) {
-  require(amountOfArms >= 0, "Robots cannot have a negative amount of arms!")
+case class Robot(naam: String, kleur: Option[String], aantalArmen: Int) {
+  require(aantalArmen >= 0, "Robots kunnen geen negatief aantal armen hebben!")
 }
 
 object RobotsApiApp extends App with SprayJsonSupport with DefaultJsonProtocol {
@@ -29,7 +29,7 @@ object RobotsApiApp extends App with SprayJsonSupport with DefaultJsonProtocol {
   implicit val RobotFormat = jsonFormat3(Robot)
 
   //A list of our domain objects
-  var robots = List(Robot("R2D2", Some("white"), 0), Robot("Asimo", None, 2))
+  var robots = List(Robot("R2D2", Some("wit"), 0), Robot("Asimo", None, 2))
 
   val route: Route =
     path("robots") {
@@ -47,10 +47,10 @@ object RobotsApiApp extends App with SprayJsonSupport with DefaultJsonProtocol {
         }
       }
     } ~ path("") { //When we go to localhost:8080/ we can show documentation
-      complete("This is the robots API")
+      complete("Robots API documentatie")
     }
 
   val bindingFuture = Http().bindAndHandle(route, "localhost", port)
 
-  println(s"Server online at http://localhost:$port/")
+  println(s"Robots API - http://localhost:$port/")
 }
