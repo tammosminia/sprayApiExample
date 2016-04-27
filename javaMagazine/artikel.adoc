@@ -13,45 +13,49 @@ Het is mogelijk om Akka in Scala of in Java te gebruiken. In dit voorbeeld zulle
 Dit artikel richt zich op Akka HTTP, wat slechts een klein gedeelte van Akka is.
 Vroeger heette dit Spray en deze naam zal ook nog in wat dependencies en packages terug komen.
 
-Je zal zien hoe je hiermee een REST API kan schrijven.
+We gaan hier een simpele REST API maken, de Robots API. We houden een lijst van robots bij, waar je robots aan kan toevoegen en verwijderen.
+
+Je maakt een robot met een POST naar http://localhost:8080/robots
+
+Je kan alle robots opvragen met een GET naar http://localhost:8080/robots
+
+Verwijderen doe je bijvoorbeeld met DELETE naar http://localhost:8080/robots/R2D2
+We gebruiken hier de naam om een robot te identificeren.
 
 
 == Build en dependencies
 
 Het lijkt voor de hand te liggen om SBT (Scala Build Tool) te gebruiken. Dit is echter helemaal niet noodzakelijk. Je kan ook gewoon Gradle gebruiken. Of zelfs maven.
-Let op de _2.11 in de dependencies. Met SBT is het niet nodig om die voluit te schrijven, dan wordt het erachter geplakt door %% te gebruiken ipv %. Zoals in "com.typesafe.akka" %% "akka-http-core" % "2.4.4".
+Let op de _2.11 in de dependencies. Met SBT is het niet nodig om die voluit te schrijven, dan wordt het erachter geplakt door %% te gebruiken ipv %. Zoals in "com.typesafe.akka" %% "akka-http-core" % "2.4.4". Hier wordt dan impliciet akka-http-core_2.11 gebruikt.
+Je gradle build-file ziet er dan als volgt uit:
 
+[source]
+----
+apply plugin: 'scala'
+apply plugin: 'application'
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    akkaVersion = "2.4.4"
+}
+
+dependencies {
+    compile group: 'org.scala-lang', name: 'scala-library', version: '2.11.7'
+    compile group: 'com.typesafe.akka', name: 'akka-actor_2.11', version: akkaVersion
+    compile group: 'com.typesafe.akka', name: 'akka-http-experimental_2.11', version: akkaVersion
+    compile group: 'com.typesafe.akka', name: 'akka-http-spray-json-experimental_2.11', version: akkaVersion
+}
+
+mainClassName = "RobotsApiApp"
+----
 
 == De Robots API
 
 We maken een API waarin we robots kunnen verzamelen. Met eenvoudige CRUD (Create, Read, Update, Delete) acties die we met de correcte HTTP requests kunnen uitvoeren. 
 
-Je maakt een robot met een POST naar http://localhost:8080/robots
-
-[source]
-----
-{
-  "name": "Optimus Prime"
-}
-----
-
-
-Je kan alle robots opvragen met een GET naar http://localhost:8080/robots
-
-[source]
-----
-[{
-  "name": "R2D2"
-}, {
-  "name": "Asimo"
-}]
-----
-
-Een update doe je met PUT naar http://localhost:8080/robots/R2D2
-
-Verwijderen doe je bijvoorbeeld met DELETE naar http://localhost:8080/robots/R2D2
-
-We gebruiken hier de naam om een robot te identificeren. Het kan handig zijn om hiervoor een uniek nummer te genereren.
 
 
 == Routes en Directives
@@ -178,7 +182,7 @@ Kleur is een optioneel veld, dus die hoef je niet mee te geven. De andere velden
 
 [source]
 ----
-$ curl -H "Content-Type: application/json" -X POST -d '{"kleur": "groen"}' http://localhost:8080/robots
+$ curl -H "Content-Type: application/json" -X POST -d '{"kleur": "groen", "aantalArmen": "1"}' http://localhost:8080/robots
 The request content was malformed:
 Object is missing required member 'naam'
 ----
@@ -190,6 +194,124 @@ In de Robots klasse hebben we ook een requirement toegevoegd. Ook die wordt netj
 $ curl -H "Content-Type: application/json" -X POST -d '{"naam": "C3PO", "kleur": "goud", "aantalArmen": -1}' http://localhost:8080/robots
 requirement failed: Robots kunnen geen negatief aantal armen hebben!
 ----
+
+== Opstarten van de API
+
+Er zijn verschillende manieren om de API te starten. +
+Lokaal is het waarschijnlijk het makkelijkst om het te starten vanuit je IDE. +
+In build.gradle hebben we de *application* plugin toegevoegd. Daardoor is het ook mogelijk om het te starten met *gradle run*. +
+Je kan een (fat)jar maken die je start met *java -jar*. +
+Vroeger kon je met spray-servlet zorgen dat spray als een servlet draait op een tomcat server. Dit maakte echter veel snelheidsvoordelen van Akka ongedaan.
+Daarom wordt dit niet meer ondersteund. Als je hoe dan ook naar een applicatieserver wilt deployen, kan je natuurlijk nog wel het Akka systeem maken bij het opstarten van een servlet.
+
+== Configuratie
+
+Akka leest zijn configuratie standaard uit application.conf.
+Dit is in HOCON formaat. Daarmee is het makkelijk om gestructureerde configuratie te maken.
+
+Je kan ook prima eigen configuratie instellingen hier in zetten, zoals het poortnummer waar de API op luistert. Tevens zetten we het loglevel wat omhoog.
+
+[source]
+----
+port = 8080
+akka {
+  loglevel = "DEBUG"
+}
+----
+
+Die lees je dan vervolgens in je actor uit met:
+[source]
+----
+val port = system.settings.config.getInt("port")
+----
+
+
+== Logging
+
+Met het directive *logRequestResult* kunnen we alle requests en antwoorden loggen.
+Ook kan je zelf logging toevoegen met system.log.info
+Als je nu een request doet, zie je dat mooi in de logging.
+
+[source]
+----
+[INFO] [04/27/2016 14:16:32.534] [RobotSystem-akka.actor.default-dispatcher-4] [akka.actor.ActorSystemImpl(RobotSystem)] We hebben nu 3 robots.
+[DEBUG] [04/27/2016 14:16:32.558] [RobotSystem-akka.actor.default-dispatcher-4] [akka.actor.ActorSystemImpl(RobotSystem)] RobotsAPI: Response for
+  Request : HttpRequest(HttpMethod(POST),http://localhost:8080/robots,List(User-Agent: curl/7.38.0, Host: localhost:8080, Accept: */*, Timeout-Access: <function1>),HttpEntity.Strict(application/json,{"naam": "C3PO", "kleur": "goud", "aantalArmen": 2}),HttpProtocol(HTTP/1.1))
+  Response: Complete(HttpResponse(200 OK,List(),HttpEntity.Strict(application/json,{
+  "naam": "C3PO",
+  "kleur": "goud",
+  "aantalArmen": 2
+}),HttpProtocol(HTTP/1.1)))
+----
+
+== De complete code
+
+Naast de build file is dit de enige code die nodig is om de API te draaien.
+
+[source]
+----
+import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Route
+import akka.stream.ActorMaterializer
+import akka.util.Timeout
+import spray.json.DefaultJsonProtocol
+import scala.concurrent.ExecutionContext
+import scala.concurrent.duration._
+
+//Our domain class
+case class Robot(naam: String, kleur: Option[String], aantalArmen: Int) {
+  require(aantalArmen >= 0, "Robots kunnen geen negatief aantal armen hebben!")
+}
+
+object RobotsApiApp extends App with SprayJsonSupport with DefaultJsonProtocol {
+  implicit val system = ActorSystem("RobotSystem")
+
+  implicit val materializer = ActorMaterializer()
+  implicit val executionContext: ExecutionContext = system.dispatcher
+  implicit val timeout = Timeout(5.seconds)
+  val port = 8080
+
+  //We use the default json marshalling for Robot.
+  //There are multiple jsonFormat methods in DefaultJsonProtocol. Depending on how many parameters the model class has.
+  //Robot has just one, so we use jsonFormat1
+  implicit val RobotFormat = jsonFormat3(Robot)
+
+  //A list of our domain objects
+  var robots = List(Robot("R2D2", Some("wit"), 0), Robot("Asimo", None, 2))
+
+  val route: Route =
+    path("robots") {
+      get { //with get we will return our current list of robots
+        complete {
+          //complete will return the result in an appropriate format
+          //With SprayJsonSupport it knows how to marshall a List to json
+          //With RobotFormat it knows how to marshall Robot
+          robots
+        }
+      } ~ post { //With post we will add a robot
+        handleWith { robot: Robot =>  //handleWith will unmarshall the input
+          robots = robot :: robots
+          robot //handleWith will also marshall the result. Here we simply return the new robot.
+        }
+      } ~ delete {
+        path(Segment) { naam =>
+          robots = robots.filter { _.naam != naam }
+          complete(200 -> "deleted")//?
+        }
+      }
+    } ~ path("") { //When we go to localhost:8080/ we can show documentation
+      complete("Robots API documentatie")
+    }
+
+  val bindingFuture = Http().bindAndHandle(route, "localhost", port)
+
+  println(s"Robots API - http://localhost:$port/")
+}
+----
+
 
 
 

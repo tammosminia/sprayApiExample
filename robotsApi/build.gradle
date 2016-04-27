@@ -1,13 +1,19 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.github.rholder:gradle-one-jar:1.0.4'
+    }
+}
+
 apply plugin: 'scala'
 apply plugin: 'application'
+apply plugin: 'gradle-one-jar'
 
 repositories {
     mavenCentral()
 }
-
-//tasks.withType(ScalaCompile) {
-//    scalaCompileOptions.useAnt = false
-//}
 
 ext {
     akkaVersion = "2.4.4"
@@ -21,3 +27,7 @@ dependencies {
 }
 
 mainClassName = "RobotsApiApp"
+
+task completeJar(type: OneJar) {
+    mainClass = mainClassName
+}

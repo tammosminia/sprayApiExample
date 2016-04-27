@@ -21,7 +21,7 @@ object RobotsApiApp extends App with SprayJsonSupport with DefaultJsonProtocol {
   implicit val materializer = ActorMaterializer()
   implicit val executionContext: ExecutionContext = system.dispatcher
   implicit val timeout = Timeout(5.seconds)
-  val port = 8080
+  val port = system.settings.config.getInt("port")
 
   //We use the default json marshalling for Robot.
   //There are multiple jsonFormat methods in DefaultJsonProtocol. Depending on how many parameters the model class has.
@@ -31,24 +31,36 @@ object RobotsApiApp extends App with SprayJsonSupport with DefaultJsonProtocol {
   //A list of our domain objects
   var robots = List(Robot("R2D2", Some("wit"), 0), Robot("Asimo", None, 2))
 
-  val route: Route =
+  val route: Route = logRequestResult("RobotsAPI") {
     path("robots") {
-      get { //with get we will return our current list of robots
+      get {
+        //with get we will return our current list of robots
         complete {
           //complete will return the result in an appropriate format
           //With SprayJsonSupport it knows how to marshall a List to json
           //With RobotFormat it knows how to marshall Robot
           robots
         }
-      } ~ post { //With post we will add a robot
-        handleWith { robot: Robot =>  //handleWith will unmarshall the input
+      } ~ post {
+        //With post we will add a robot
+        handleWith { robot: Robot => //handleWith will unmarshall the input
           robots = robot :: robots
+          system.log.info(s"We hebben nu ${robots.size} robots.")
           robot //handleWith will also marshall the result. Here we simply return the new robot.
         }
+      } ~ delete {
+        path(Segment) { naam =>
+          robots = robots.filter {
+            _.naam != naam
+          }
+          complete(200 -> "deleted") //?
+        }
       }
-    } ~ path("") { //When we go to localhost:8080/ we can show documentation
+    } ~ path("") {
+      //When we go to localhost:8080/ we can show documentation
       complete("Robots API documentatie")
     }
+  }
 
   val bindingFuture = Http().bindAndHandle(route, "localhost", port)
 
