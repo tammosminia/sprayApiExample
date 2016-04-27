@@ -32,7 +32,7 @@ object RobotsApiApp extends App with SprayJsonSupport with DefaultJsonProtocol {
   var robots = List(Robot("R2D2", Some("wit"), 0), Robot("Asimo", None, 2))
 
   val route: Route = logRequestResult("RobotsAPI") {
-    path("robots") {
+    pathPrefix("robots") {
       get {
         //with get we will return our current list of robots
         complete {
@@ -50,10 +50,8 @@ object RobotsApiApp extends App with SprayJsonSupport with DefaultJsonProtocol {
         }
       } ~ delete {
         path(Segment) { naam =>
-          robots = robots.filter {
-            _.naam != naam
-          }
-          complete(200 -> "deleted") //?
+          robots = robots.filter { _.naam != naam }
+          complete(s"robot $naam verwijderd")
         }
       }
     } ~ path("") {
