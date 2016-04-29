@@ -309,6 +309,8 @@ object RobotsApiApp extends App with SprayJsonSupport with DefaultJsonProtocol {
 }
 ----
 
+== Biografie
 
+image::profielfoto.jpg[Tammo,300,300]
 
-
+Tammo is een programmeur die werkt bij JDriven. Na veel ervaring met Java en Groovy, maakt hij nu mooie dingen in Scala.
