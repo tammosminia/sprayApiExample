@@ -5,6 +5,7 @@
 Akka is een framework waarin je Actors maakt die met elkaar communiceren door middel van Messages.
 Deze Messages komen eerst in een Mailbox terecht. Ze zullen een voor een door de actor opgepakt worden.
 Hierdoor kan je binnen een actor makkelijk state bijhouden en bewerken. Deze state kan namelijk niet door andere actors of threads bewerkt worden.
+
 Het is mogelijk om Akka in Scala of in Java te gebruiken. In dit voorbeeld zullen we Scala gebruiken. 
 
 
@@ -12,6 +13,7 @@ Het is mogelijk om Akka in Scala of in Java te gebruiken. In dit voorbeeld zulle
 
 Dit artikel richt zich op Akka HTTP, wat slechts een klein gedeelte van Akka is.
 Vroeger heette dit Spray en deze naam zal ook nog in wat dependencies en packages terug komen.
+De artifact naam is nog akka-http-experimental. Maar laat je hierdoor niet afschrikken. Dit is omdat er nog wijzigingen on de inteface kunnen komen. Het draait al wel stabiel.
 
 We gaan hier een simpele REST API maken, de Robots API. We houden een lijst van robots bij, waar je robots aan kan toevoegen en verwijderen.
 
@@ -19,14 +21,15 @@ Je maakt een robot met een POST naar http://localhost:8080/robots
 
 Je kan alle robots opvragen met een GET naar http://localhost:8080/robots
 
-Verwijderen doe je bijvoorbeeld met DELETE naar http://localhost:8080/robots/R2D2
+Verwijderen doe je met DELETE naar http://localhost:8080/robots/R2D2
 We gebruiken hier de naam om een robot te identificeren.
 
 
 == Build en dependencies
 
-Het lijkt voor de hand te liggen om SBT (Scala Build Tool) te gebruiken. Dit is echter helemaal niet noodzakelijk. Je kan ook gewoon Gradle gebruiken. Of zelfs maven.
-Let op de _2.11 in de dependencies. Met SBT is het niet nodig om die voluit te schrijven, dan wordt het erachter geplakt door %% te gebruiken ipv %. Zoals in "com.typesafe.akka" %% "akka-http-core" % "2.4.4". Hier wordt dan impliciet akka-http-core_2.11 gebruikt.
+Het lijkt voor de hand te liggen om SBT (Scala Build Tool) te gebruiken. Dit is echter helemaal niet noodzakelijk. Je kan ook gewoon Gradle gebruiken. Of zelfs maven. +
+Let op de _2.11 in de dependencies. Met SBT is het niet nodig om die voluit te schrijven, dan wordt het erachter geplakt door %% te gebruiken ipv %.
+Zoals in "com.typesafe.akka" %% "akka-http-core" % "2.4.4". Hier wordt dan impliciet akka-http-core_2.11 gebruikt. +
 Je gradle build-file ziet er dan als volgt uit:
 
 [source]
@@ -118,7 +121,8 @@ In onze API houden we de lijst met bekende robots bij. Die starten we voor het g
 var robots = List(Robot("R2D2", Some("wit"), 0), Robot("Asimo", None, 2))
 ----
 
-Akka weet al hoe de standaard klassen (zoals String, List, Int) gemarshalled moeten worden. Voor onze domein klasse moet je een impliciete variabele toevoegen.
+Akka weet al hoe de standaard klassen (zoals String, List, Int) gemarshalled moeten worden. +
+Voor onze domein klasse moet je een impliciete variabele toevoegen.
 De 3 staat hier voor het aantal instance variabelen die Robot heeft (naam, kleur en aantalArmen).
 
 [source]
@@ -126,7 +130,7 @@ De 3 staat hier voor het aantal instance variabelen die Robot heeft (naam, kleur
 implicit val RobotFormat = jsonFormat3(Robot)
 ----
 
-Nu kan Akka zowel JSON van robots als robots van JSON. Met *complete* kunnen we nu gewoon de lijst met robots teruggeven.
+Nu kan Akka zowel JSON van robots maken en robots van JSON. Met *complete* kunnen we nu de lijst met robots teruggeven.
 Voor de POST gebruiken we *handleWith*. Dit vertaalt de input naar ons domein object en het vertaalt ook het uiteindelijke resultaat weer naar JSON.
 We geven hier de nieuwe robot weer terug.
 
@@ -211,7 +215,8 @@ Daarom wordt dit niet meer ondersteund. Als je hoe dan ook naar een applicatiese
 Akka leest zijn configuratie standaard uit application.conf.
 Dit is in HOCON formaat. Daarmee is het makkelijk om gestructureerde configuratie te maken.
 
-Je kan ook prima eigen configuratie instellingen hier in zetten, zoals het poortnummer waar de API op luistert. Tevens zetten we het loglevel wat omhoog.
+Je kan hier Akka defaults overschrijven. We zetten nu het loglevel wat omhoog. +
+Je kan ook prima eigen configuratie instellingen hier in zetten, zoals het poortnummer waar de API op luistert.
 
 [source]
 ----
@@ -231,7 +236,7 @@ val port = system.settings.config.getInt("port")
 == Logging
 
 Met het directive *logRequestResult* kunnen we alle requests en antwoorden loggen.
-Ook kan je zelf logging toevoegen met system.log.info
+Ook kan je zelf logging toevoegen met *system.log.info*. +
 Als je nu een request doet, zie je dat mooi in de logging.
 
 [source]
@@ -252,6 +257,56 @@ Naast de build file is dit de enige code die nodig is om de API te draaien. Dit 
 
 [source]
 ----
+import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Route
+import akka.stream.ActorMaterializer
+import akka.util.Timeout
+import spray.json.DefaultJsonProtocol
+import scala.concurrent.ExecutionContext
+import scala.concurrent.duration._
+
+case class Robot(naam: String, kleur: Option[String], aantalArmen: Int) {
+  require(aantalArmen >= 0, "Robots kunnen geen negatief aantal armen hebben!")
+}
+
+object RobotsApiApp extends App with SprayJsonSupport with DefaultJsonProtocol {
+  implicit val system = ActorSystem("RobotSystem")
+  implicit val materializer = ActorMaterializer()
+  implicit val executionContext: ExecutionContext = system.dispatcher
+  implicit val timeout = Timeout(5.seconds)
+  val port = system.settings.config.getInt("port")
+
+  implicit val RobotFormat = jsonFormat3(Robot)
+
+  var robots = List(Robot("R2D2", Some("wit"), 0), Robot("Asimo", None, 2))
+
+  val route: Route = logRequestResult("RobotsAPI") {
+    pathPrefix("robots") {
+      get {
+        complete(robots)
+      } ~ post {
+        handleWith { robot: Robot =>
+          robots = robot :: robots
+          system.log.info(s"We hebben nu ${robots.size} robots.")
+          robot
+        }
+      } ~ delete {
+        path(Segment) { naam =>
+          robots = robots.filter { _.naam != naam }
+          complete(s"robot $naam verwijderd")
+        }
+      }
+    } ~ path("") {
+      complete("Robots API documentatie")
+    }
+  }
+
+  val bindingFuture = Http().bindAndHandle(route, "localhost", port)
+  println(s"Robots API - http://localhost:$port/")
+}
 ----
 
 
