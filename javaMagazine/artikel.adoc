@@ -248,7 +248,7 @@ Als je nu een request doet, zie je dat mooi in de logging.
 
 == De complete code
 
-Naast de build file is dit de enige code die nodig is om de API te draaien.
+Naast de build file is dit de enige code die nodig is om de API te draaien. Dit is ook te vinden onder github
 
 [source]
 ----
