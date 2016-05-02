@@ -2,22 +2,23 @@
 
 == Akka
 
-//
-// Als ik nog nooit van Akka heb gehoord, verwacht ik hier wel wat meer informatie over wat actors, messages, mailboxen e.d. zijn. Dit is nog vrij summier.
-//
-
 Akka is een framework waarin je Actors maakt die met elkaar communiceren door middel van Messages.
-Deze Messages komen eerst in een Mailbox terecht. Ze zullen één voor één door de Actor worden opgepakt.
-Hierdoor kun je binnen een Actor makkelijk state bijhouden en bewerken. Deze state kan namelijk niet door andere actors of threads worden bewerkt.
+Een Message is normaal een voorgedefiniëerde klasse die je actor ondersteunt.
+Deze Messages komen eerst in de Mailbox voor die Actor terecht. Ze zullen één voor één door de Actor worden opgepakt. +
+Omdat Messages de enige manier van communicatie zijn tussen Actors, kun je binnen een Actor makkelijk state bijhouden en bewerken.
+Deze state kan namelijk niet door andere actors worden bewerkt. +
+Wel kunnen meerdere Actors tegelijk draaien. Hierdoor is het mogelijk om erg schaalbare applicaties te maken.
+Terwijl je de zekerheid hebt dat binnen één Actor alleen die Actor zelf zijn state kan aanpassen. Je hoeft zelf geen Threads te maken, met alle complexiteit die daarbij komt kijken.
 
-Het is mogelijk om Akka in Scala of in Java te gebruiken. In dit voorbeeld zullen we Scala gebruiken. 
+Het is mogelijk om Akka in Scala of in Java te gebruiken. In dit voorbeeld zullen we Scala gebruiken.
 
 
 == Akka HTTP
 
 Dit artikel richt zich op Akka HTTP, wat slechts een klein gedeelte van Akka is.
 Vroeger heette dit Spray en deze naam zal ook nog in wat dependencies en packages terugkomen.
-De artifact-naam is nog *akka-http-experimental*. Maar laat je hierdoor niet afschrikken. Dit is omdat er nog wijzigingen op de interface kunnen komen. Het draait al wel stabiel. // Wat is stabiel? Stabiel genoeg voor gebruik in productie?
+De artifact-naam is nog *akka-http-experimental*. Maar laat je hierdoor niet afschrikken.
+Dit is omdat er nog wijzigingen op de interface kunnen komen. Het draait al wel stabiel genoeg om in productie te gebruiken.
 
 We gaan hier een simpele REST API maken, de Robots API. Er wordt een lijst van robots bijgehouden, waar je robots aan kunt toevoegen en verwijderen.
 
@@ -31,13 +32,11 @@ We gebruiken hier de naam (in dit geval: 'R2D2') om een robot te identificeren.
 
 == Build en dependencies
 
-//
-// Ik zou hier ook iets meer toelichting geven. Ik lees dit, en zie 2.11 staan, en vervolgens 2.4.4, wat is precies het verschil tussen deze versienummers?
-//
-
+We gebruiken natuurlijk het nieuwste van het nieuwste, Scala 2.11.7 en Akka 2.4.4. +
 Het lijkt voor de hand te liggen om SBT (Scala Build Tool) te gebruiken. Dit is echter helemaal niet noodzakelijk. Je kunt ook gewoon Gradle of Maven gebruiken. +
 Let op de _2.11 in de dependencies. Met SBT is het niet nodig om die voluit te schrijven, dan wordt het erachter geplakt door %% te gebruiken ipv %.
 Zoals in "com.typesafe.akka" %% "akka-http-core" % "2.4.4". Hier wordt dan impliciet akka-http-core_2.11 gebruikt. +
+Er zijn ook versies gecompileerd voor oudere Scala versies. Die hebben wij niet nodig. +
 Je Gradle build-file ziet er dan als volgt uit:
 
 [source]
@@ -65,7 +64,8 @@ mainClassName = "RobotsApiApp"
 
 == Routes en Directives
 
-Het hart van Akka HTTP is de Route. Dit bepaalt wat er uiteindelijk gebeurt met de binnenkomende requests. De Route wordt opgebouwd met behulp van Directives: kleine eenvoudige bouwblokken die je in elkaar kunt nesten of naast elkaar kunt zetten met *~*.
+Het hart van Akka HTTP is de Route. Dit bepaalt wat er uiteindelijk gebeurt met de binnenkomende requests.
+De Route wordt opgebouwd met behulp van Directives: kleine eenvoudige bouwblokken die je in elkaar kunt nesten of naast elkaar kunt zetten met *~*.
 
 Akka levert standaard al een aantal Directives voor allerlei verschillende doeleinden. Bijvoorbeeld:
 
@@ -184,6 +184,7 @@ $ curl -H "Content-Type: application/json" -X POST -d '{"naam": "C3PO", "kleur":
 == Validatie
 
 Als je ongeldige input geeft, dan krijg je ook netjes foutmeldingen terug.
+Als je een *String* mee geeft waar een *Int* hoort.
 
 [source]
 ----
@@ -201,7 +202,7 @@ The request content was malformed:
 Object is missing required member 'naam'
 ----
 
-In de Robots klasse hebben we ook een requirement toegevoegd. Ook deze wordt netjes gecontroleerd en doorgegeven.
+In de Robots klasse hebben we een requirement toegevoegd. Ook deze wordt netjes gecontroleerd en doorgegeven.
 
 [source]
 ----
@@ -216,12 +217,7 @@ Lokaal is het waarschijnlijk het eenvoudigst om het te starten vanuit je IDE. +
 In build.gradle hebben we de *application* plugin toegevoegd. Dit maakt het mogelijk om de applicatie te starten met behulp van het commando: *gradle run*. +
 Je kunt een (fat) JAR maken die je start met *java -jar*. +
 Vroeger kon je met spray-servlet zorgen dat spray als een servlet draait op een Tomcat server. Dit maakte echter veel snelheidsvoordelen van Akka ongedaan.
-Daarom wordt dit niet meer ondersteund. Als je hoe dan ook naar een applicatieserver wilt deployen, kun je natuurlijk nog wel het Akka systeem maken bij het opstarten van een servlet.
-
-//
-// Wat bedoel je met 'het Akka systeem maken'? Dit is mij nog niet helemaal duidelijk.
-//
-
+Daarom wordt dit niet meer ondersteund.
 
 == Configuratie
 
