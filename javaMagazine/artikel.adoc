@@ -2,9 +2,13 @@
 
 == Akka
 
+//
+// Als ik nog nooit van Akka heb gehoord, verwacht ik hier wel wat meer informatie over wat actors, messages, mailboxen e.d. zijn. Dit is nog vrij summier.
+//
+
 Akka is een framework waarin je Actors maakt die met elkaar communiceren door middel van Messages.
-Deze Messages komen eerst in een Mailbox terecht. Ze zullen een voor een door de actor opgepakt worden.
-Hierdoor kan je binnen een actor makkelijk state bijhouden en bewerken. Deze state kan namelijk niet door andere actors of threads bewerkt worden.
+Deze Messages komen eerst in een Mailbox terecht. Ze zullen één voor één door de Actor worden opgepakt.
+Hierdoor kun je binnen een Actor makkelijk state bijhouden en bewerken. Deze state kan namelijk niet door andere actors of threads worden bewerkt.
 
 Het is mogelijk om Akka in Scala of in Java te gebruiken. In dit voorbeeld zullen we Scala gebruiken. 
 
@@ -12,25 +16,29 @@ Het is mogelijk om Akka in Scala of in Java te gebruiken. In dit voorbeeld zulle
 == Akka HTTP
 
 Dit artikel richt zich op Akka HTTP, wat slechts een klein gedeelte van Akka is.
-Vroeger heette dit Spray en deze naam zal ook nog in wat dependencies en packages terug komen.
-De artifact naam is nog akka-http-experimental. Maar laat je hierdoor niet afschrikken. Dit is omdat er nog wijzigingen on de inteface kunnen komen. Het draait al wel stabiel.
+Vroeger heette dit Spray en deze naam zal ook nog in wat dependencies en packages terugkomen.
+De artifact-naam is nog *akka-http-experimental*. Maar laat je hierdoor niet afschrikken. Dit is omdat er nog wijzigingen op de interface kunnen komen. Het draait al wel stabiel. // Wat is stabiel? Stabiel genoeg voor gebruik in productie?
 
-We gaan hier een simpele REST API maken, de Robots API. We houden een lijst van robots bij, waar je robots aan kan toevoegen en verwijderen.
+We gaan hier een simpele REST API maken, de Robots API. Er wordt een lijst van robots bijgehouden, waar je robots aan kunt toevoegen en verwijderen.
 
 Je maakt een robot met een POST naar http://localhost:8080/robots
 
-Je kan alle robots opvragen met een GET naar http://localhost:8080/robots
+Je kunt alle robots opvragen met een GET naar http://localhost:8080/robots
 
 Verwijderen doe je met DELETE naar http://localhost:8080/robots/R2D2
-We gebruiken hier de naam om een robot te identificeren.
+We gebruiken hier de naam (in dit geval: 'R2D2') om een robot te identificeren.
 
 
 == Build en dependencies
 
-Het lijkt voor de hand te liggen om SBT (Scala Build Tool) te gebruiken. Dit is echter helemaal niet noodzakelijk. Je kan ook gewoon Gradle gebruiken. Of zelfs maven. +
+//
+// Ik zou hier ook iets meer toelichting geven. Ik lees dit, en zie 2.11 staan, en vervolgens 2.4.4, wat is precies het verschil tussen deze versienummers?
+//
+
+Het lijkt voor de hand te liggen om SBT (Scala Build Tool) te gebruiken. Dit is echter helemaal niet noodzakelijk. Je kunt ook gewoon Gradle of Maven gebruiken. +
 Let op de _2.11 in de dependencies. Met SBT is het niet nodig om die voluit te schrijven, dan wordt het erachter geplakt door %% te gebruiken ipv %.
 Zoals in "com.typesafe.akka" %% "akka-http-core" % "2.4.4". Hier wordt dan impliciet akka-http-core_2.11 gebruikt. +
-Je gradle build-file ziet er dan als volgt uit:
+Je Gradle build-file ziet er dan als volgt uit:
 
 [source]
 ----
@@ -57,21 +65,21 @@ mainClassName = "RobotsApiApp"
 
 == Routes en Directives
 
-Het hart van Akka HTTP is de Route. Die bouw je op met Directives die je in elkaar kan nesten of juist naast elkaar zetten met *~*. Op die manier bouw je een boom waar je met je request uiteindelijk in een tak terecht komt.
+Het hart van Akka HTTP is de Route. Dit bepaalt wat er uiteindelijk gebeurt met de binnenkomende requests. De Route wordt opgebouwd met behulp van Directives: kleine eenvoudige bouwblokken die je in elkaar kunt nesten of naast elkaar kunt zetten met *~*.
 
-Er zijn directives voor allerlei verschillende dingen. Bijvoorbeeld:
+Akka levert standaard al een aantal Directives voor allerlei verschillende doeleinden. Bijvoorbeeld:
 
-- Controle van de HTTP methode: get, post
+- Controle van de HTTP methode: o.a. get, post
 - Extractie van parameters: parameters
 - Extractie van headers: headerValueByName
 - Authenticatie: authenticateBasic
 - Marshalling: complete, entity, handleWith
 
-In het voorbeeld zie je dat we eerst splitsen op het URL pad. Bij een leeg pad (http://localhost:8080/) geven we documentatie.
-En onder "robots" splitsen we aan de hand van de HTTP methode zodat je de correcte handeling kan doen.
+In het voorbeeld zie je dat we eerst splitsen op het URL-pad. Bij een leeg pad (http://localhost:8080/) geven we de API documentatie terug.
+En onder "robots" splitsen we aan de hand van de HTTP methode, zodat je de correcte handeling kunt doen.
 Met *complete* geven we het antwoord terug. Nu nog in de vorm van eenvoudige tekst.
 
-Voor de DELETE lezen we het laatste stukje url pad, dat is de naam van de robot.
+Voor de DELETE lezen we het laatste stukje URL-pad, dat is de naam van de robot.
 
 Je route ziet er dan als volgt uit:
 [source]
@@ -92,7 +100,7 @@ val route: Route =
   }
 ----
 
-Dit kan je testen met curl:
+De werking hiervan kun je testen met curl:
 [source]
 ----
 $ curl http://localhost:8080
@@ -105,7 +113,7 @@ Verwijder robot Asimo
 
 == Marshalling
 
-Nu gaan we een domein object aanmaken dat naar JSON gemarshalled wordt.
+Nu gaan we een domeinobject aanmaken dat naar JSON kan worden gemarshalled.
 
 [source]
 ----
@@ -114,24 +122,24 @@ case class Robot(naam: String, kleur: Option[String], aantalArmen: Int) {
 }
 ----
 
-In onze API houden we de lijst met bekende robots bij. Die starten we voor het gemak alvast met twee robots:
+In onze API houden we de lijst met bekende robots bij. Die vullen we voor het gemak alvast met twee robots:
 
 [source]
 ----
 var robots = List(Robot("R2D2", Some("wit"), 0), Robot("Asimo", None, 2))
 ----
 
-Akka weet al hoe de standaard klassen (zoals String, List, Int) gemarshalled moeten worden. +
+Akka weet al hoe de standaard klassen (zoals String, List, Int) moeten worden gemarshalled. +
 Voor onze domein klasse moet je een impliciete variabele toevoegen.
-De 3 staat hier voor het aantal instance variabelen die Robot heeft (naam, kleur en aantalArmen).
+De 3 staat hier voor het aantal instance variabelen dat Robot heeft (naam, kleur en aantalArmen).
 
 [source]
 ----
 implicit val RobotFormat = jsonFormat3(Robot)
 ----
 
-Nu kan Akka zowel JSON van robots maken en robots van JSON. Met *complete* kunnen we nu de lijst met robots teruggeven.
-Voor de POST gebruiken we *handleWith*. Dit vertaalt de input naar ons domein object en het vertaalt ook het uiteindelijke resultaat weer naar JSON.
+Nu is Akka in staat om robots te marshallen naar JSON, en te unmarshallen vanuit JSON. Met *complete* kunnen we nu simpelweg de lijst met robots teruggeven.
+Voor de POST gebruiken we *handleWith*. Dit vertaalt de input naar ons domeinobject en het vertaalt ook het uiteindelijke resultaat weer naar JSON.
 We geven hier de nieuwe robot weer terug.
 
 [source]
@@ -193,7 +201,7 @@ The request content was malformed:
 Object is missing required member 'naam'
 ----
 
-In de Robots klasse hebben we ook een requirement toegevoegd. Ook die wordt netjes gecontrolleerd en doorgegeven.
+In de Robots klasse hebben we ook een requirement toegevoegd. Ook deze wordt netjes gecontroleerd en doorgegeven.
 
 [source]
 ----
@@ -204,19 +212,24 @@ requirement failed: Robots kunnen geen negatief aantal armen hebben!
 == Opstarten van de API
 
 Er zijn verschillende manieren om de API te starten. +
-Lokaal is het waarschijnlijk het makkelijkst om het te starten vanuit je IDE. +
-In build.gradle hebben we de *application* plugin toegevoegd. Daardoor is het ook mogelijk om het te starten met *gradle run*. +
-Je kan een (fat)jar maken die je start met *java -jar*. +
-Vroeger kon je met spray-servlet zorgen dat spray als een servlet draait op een tomcat server. Dit maakte echter veel snelheidsvoordelen van Akka ongedaan.
-Daarom wordt dit niet meer ondersteund. Als je hoe dan ook naar een applicatieserver wilt deployen, kan je natuurlijk nog wel het Akka systeem maken bij het opstarten van een servlet.
+Lokaal is het waarschijnlijk het eenvoudigst om het te starten vanuit je IDE. +
+In build.gradle hebben we de *application* plugin toegevoegd. Dit maakt het mogelijk om de applicatie te starten met behulp van het commando: *gradle run*. +
+Je kunt een (fat) JAR maken die je start met *java -jar*. +
+Vroeger kon je met spray-servlet zorgen dat spray als een servlet draait op een Tomcat server. Dit maakte echter veel snelheidsvoordelen van Akka ongedaan.
+Daarom wordt dit niet meer ondersteund. Als je hoe dan ook naar een applicatieserver wilt deployen, kun je natuurlijk nog wel het Akka systeem maken bij het opstarten van een servlet.
+
+//
+// Wat bedoel je met 'het Akka systeem maken'? Dit is mij nog niet helemaal duidelijk.
+//
+
 
 == Configuratie
 
-Akka leest zijn configuratie standaard uit application.conf.
-Dit is in HOCON formaat. Daarmee is het makkelijk om gestructureerde configuratie te maken.
+Akka leest zijn configuratie standaard uit *application.conf*.
+Dit is in HOCON formaat. Daarmee is het eenvoudig om een gestructureerde configuratie te maken.
 
-Je kan hier Akka defaults overschrijven. We zetten nu het loglevel wat omhoog. +
-Je kan ook prima eigen configuratie instellingen hier in zetten, zoals het poortnummer waar de API op luistert.
+Je kunt hier Akka defaults overschrijven. We zetten nu het loglevel wat omhoog. +
+Ook kun je hier prima je eigen configuratie instellingen in kwijt, zoals het poortnummer waar de API op luistert.
 
 [source]
 ----
@@ -226,7 +239,7 @@ akka {
 }
 ----
 
-Die lees je dan vervolgens in je actor uit met:
+Deze configuratie is vervolgens uit te lezen in je Actor met:
 [source]
 ----
 val port = system.settings.config.getInt("port")
@@ -235,8 +248,8 @@ val port = system.settings.config.getInt("port")
 
 == Logging
 
-Met het directive *logRequestResult* kunnen we alle requests en antwoorden loggen.
-Ook kan je zelf logging toevoegen met *system.log.info*. +
+Met het directive *logRequestResult* kunnen we alle requests en responses loggen.
+Ook kun je zelf logging toevoegen met *system.log.info*. +
 Als je nu een request doet, zie je dat mooi in de logging.
 
 [source]
@@ -253,10 +266,11 @@ Als je nu een request doet, zie je dat mooi in de logging.
 
 == De complete code
 
-Naast de build file is dit de enige code die nodig is om de API te draaien. Dit is ook te vinden onder github https://github.com/tammosminia/sprayApiExample/tree/javaMagazine/robotsApi.
+Naast de build file is dit de enige code die nodig is om de API te draaien. Dit is ook te vinden op GitHub: https://github.com/tammosminia/sprayApiExample/tree/javaMagazine/robotsApi.
 
 [source]
 ----
+
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
