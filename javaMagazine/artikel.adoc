@@ -3,20 +3,13 @@
 == Akka
 
 Akka is een framework waarin je Actors maakt die met elkaar communiceren door middel van Messages.
-Een Message is normaal een voorgedefiniëerde klasse die je actor ondersteunt.
-Deze Messages komen eerst in de Mailbox voor die Actor terecht. Ze zullen één voor één door de Actor worden opgepakt. +
-Omdat Messages de enige manier van communicatie zijn tussen Actors, kun je binnen een Actor makkelijk state bijhouden en bewerken.
-Deze state kan namelijk niet door andere actors worden bewerkt. +
-Wel kunnen meerdere Actors tegelijk draaien. Hierdoor is het mogelijk om erg schaalbare applicaties te maken.
-Terwijl je de zekerheid hebt dat binnen één Actor alleen die Actor zelf zijn state kan aanpassen. Je hoeft zelf geen Threads te maken, met alle complexiteit die daarbij komt kijken.
-
-Het is mogelijk om Akka in Scala of in Java te gebruiken. In dit voorbeeld zullen we Scala gebruiken.
-
+In een eerdere editie zijn Akka en het bijhorende actor model al uitgebreid toegelicht (zie http://www.nljug.org/databasejava/akka/). +
+Dit artikel ligt toe hoe je met behulp van een subproject van Akka, Akka Http (voorheen Spray) eenvoudige restful api's kunt ontwikkelen.
 
 == Akka HTTP
 
-Dit artikel richt zich op Akka HTTP, wat slechts een klein gedeelte van Akka is.
-Vroeger heette dit Spray en deze naam zal ook nog in wat dependencies en packages terugkomen.
+Akka HTTP is een subproject van Akka dat zorgt voor communicatie met de buitenwereld, door middel van HTTP.
+Vroeger heette dit Spray en deze naam zal ook nog in wat dependencies en packages terugkomen. +
 De artifact-naam is nog *akka-http-experimental*. Maar laat je hierdoor niet afschrikken.
 Dit is omdat er nog wijzigingen op de interface kunnen komen. Het draait al wel stabiel genoeg om in productie te gebruiken.
 
